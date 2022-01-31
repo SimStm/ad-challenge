@@ -1,0 +1,73 @@
+services:  
+  database-mongodb:
+    container_name: challenge-db-mongodb
+    # env_file:
+    # - environment.env
+    image: mongo:5.0
+    # networks:
+    #   backend-database: null
+    ports:
+    - mode: ingress
+      target: 27017
+      published: 27017
+      protocol: tcp
+    restart: always
+    volumes:
+    - type: bind
+      source: ./volumes/mongodb-config
+      target: /data/configdb
+    - type: bind
+      source: ./volumes/mongodb-config
+      target: /var/lib/mongodb
+    - type: bind
+      source: ./volumes/mongodb-data
+      target: /data/db
+    - type: bind
+      source: ./volumes/mongodb-init
+      target: /docker-entrypoint-initdb.d
+  adserver-backend:
+    build:
+      context: ./adserver-backend
+    container_name: challenge-backend-adserver
+    depends_on:
+      database-mongodb:
+        condition: service_started
+    ports:
+    - mode: ingress
+      target: 3100
+      published: 3100
+      protocol: tcp
+    restart: always
+  console-backend:
+    build:
+      context: ./console-backend
+    container_name: challenge-backend-console
+    depends_on:
+      database-mongodb:
+        condition: service_started
+    ports:
+    - mode: ingress
+      target: 3200
+      published: 3200
+      protocol: tcp
+    restart: always
+  console-frontend:
+    build:
+      context: ./console-frontend
+    container_name: challenge-frontend-console
+    depends_on:
+      console-backend:
+        condition: service_started
+      database-mongodb:
+        condition: service_started
+    # networks:
+    #   frontend-backend: null
+    ports:
+    - mode: ingress
+      target: 80
+      published: 81
+      protocol: tcp
+    restart: always
+# networks:
+#   backend-database: {}
+#   frontend-backend: {}
